@@ -1,40 +1,55 @@
 # Humonics Dashboard
 
-The web app for the Humonics protocol. Creators issue and manage content certificates. Verifiers check content authenticity — no wallet required.
+> Verify content authenticity. Issue certificates. Manage your creative work on-chain.
 
-Built with Next.js 14, Tailwind CSS, and `@humonics/sdk`.
+The official web interface for the Humonics protocol — built for creators who want cryptographic proof of their work, and verifiers who need to trust it.
 
 ---
 
-## Features
+## What it does
 
-- **Public verify tool** — paste any SHA-256 content hash, get instant on-chain verification. No wallet needed.
-- **Creator dashboard** — connect Freighter wallet, issue certificates, view and revoke your own.
-- **Zero private key exposure** — all signing goes through Freighter. Private keys never touch the browser.
+**For verifiers (no wallet needed)**
+Paste any SHA-256 content hash and instantly see whether it has a certificate on the Humonics registry — certified, uncertified, or revoked.
+
+**For creators (Freighter wallet)**
+Connect your Stellar wallet, issue certificates backed by zero-knowledge proofs, and manage your entire certificate history from one dashboard.
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Styling | Tailwind CSS |
+| Blockchain | `@humonics/sdk` → Stellar / Soroban |
+| Wallet | Freighter (`@stellar/freighter-api`) |
+| Language | TypeScript 5 |
 
 ---
 
 ## Getting started
 
-### Prerequisites
-
-- Node.js ≥ 18
-- [Freighter wallet](https://www.freighter.app/) browser extension (creator flow only)
-
-### Setup
+**Prerequisites:** Node.js ≥ 18. [Freighter](https://www.freighter.app/) browser extension for the creator flow.
 
 ```bash
 git clone git@github.com:humonicsprotocol/Humonics-dashboard.git
 cd Humonics-dashboard
-cp .env.example .env.local   # set NEXT_PUBLIC_NETWORK and contract addresses
+cp .env.example .env.local
 npm install
-npm run dev                  # http://localhost:3000
+npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+The verify tool works immediately. For the creator dashboard, install Freighter and switch it to testnet.
 
 ### Environment variables
 
 ```bash
-NEXT_PUBLIC_NETWORK=testnet                    # or mainnet
+NEXT_PUBLIC_NETWORK=testnet
+
+# Soroban contract addresses
 NEXT_PUBLIC_VERIFICATION_GATEWAY_TESTNET=C...
 NEXT_PUBLIC_CERTIFICATE_REGISTRY_TESTNET=C...
 ```
@@ -43,38 +58,43 @@ NEXT_PUBLIC_CERTIFICATE_REGISTRY_TESTNET=C...
 
 ## Pages
 
-| Route | Description |
-|---|---|
-| `/` | Public content hash verifier |
-| `/dashboard` | Creator dashboard — wallet required |
+| Route | Who | Description |
+|---|---|---|
+| `/` | Everyone | Paste a content hash → instant on-chain result |
+| `/dashboard` | Creators | Issue, view, and revoke certificates |
 
 ---
 
-## Architecture
+## How it's structured
 
 ```
-page.tsx / dashboard/page.tsx
-  └── components (VerifyWidget, CertificateCard, IssueForm)
-        └── hooks (useVerify, useCertificates)
-              └── lib/sdk.ts  ← HumonicsClient singleton
-                    └── @humonics/sdk  ← all Stellar/Soroban logic
+src/
+├── app/                     # Next.js App Router pages
+│   ├── page.tsx             # Public verify tool
+│   └── dashboard/page.tsx   # Creator dashboard (wallet-gated)
+├── components/
+│   ├── VerifyWidget.tsx     # Hash input + result display
+│   ├── CertificateCard.tsx  # Certified / revoked certificate view
+│   └── IssueForm.tsx        # Certificate issuance flow
+├── hooks/
+│   ├── useVerify.ts         # Single hash verification state
+│   └── useCertificates.ts   # Batch certificate fetching
+└── lib/
+    ├── sdk.ts               # HumonicsClient singleton
+    └── wallet.ts            # Freighter connect / sign helpers
 ```
 
-Components never call the SDK directly — always through hooks. All Stellar interaction goes through `@humonics/sdk`. No direct contract calls.
+**Data flow:** pages → components → hooks → `lib/sdk.ts` → `@humonics/sdk` → Soroban
+
+Components never call the SDK directly. All signing goes through Freighter — private keys never touch the app.
 
 ---
 
-## Key files
+## Security model
 
-| File | Purpose |
-|---|---|
-| `src/lib/sdk.ts` | `HumonicsClient` singleton |
-| `src/lib/wallet.ts` | Freighter connect / sign helpers |
-| `src/hooks/useVerify.ts` | Verify a single content hash |
-| `src/hooks/useCertificates.ts` | Batch-fetch certificates |
-| `src/components/VerifyWidget.tsx` | Public hash checker |
-| `src/components/CertificateCard.tsx` | Certificate display |
-| `src/components/IssueForm.tsx` | Creator issuance flow |
+- **No private keys in the browser.** Signing is delegated entirely to Freighter.
+- **No localStorage caching.** Certificate data is always fetched fresh from the chain.
+- **No direct contract calls.** All Stellar/Soroban interaction goes through `@humonics/sdk`.
 
 ---
 
@@ -87,7 +107,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## Roadmap
 
 - [ ] Revoke flow in dashboard
-- [ ] zkProof integration (pending `@humonics/zk-circuits`)
+- [ ] zkProof generation (pending `@humonics/zk-circuits`)
 - [ ] Loading skeletons
 - [ ] Tests (Vitest + React Testing Library)
 - [ ] Wallet disconnect / account switching
